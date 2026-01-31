@@ -9,7 +9,6 @@ import Dashboard from "@/pages/dashboard";
 import Profile from "@/pages/profile";
 import LibraryPage from "@/pages/library";
 import VaultPage from "@/pages/vault";
-import AITutor from "@/pages/ai-tutor";
 import CommunityPage from "@/pages/community";
 import HelpPage from "@/pages/help";
 import AdminPanel from "@/pages/admin";
@@ -47,7 +46,6 @@ function Router() {
       <Route path="/profile" component={Profile} />
       <Route path="/library" component={LibraryPage} />
       <Route path="/vault" component={VaultPage} />
-      <Route path="/ai-tutor" component={AITutor} />
       <Route path="/community" component={CommunityPage} />
       <Route path="/help" component={HelpPage} />
       <Route path="/admin" component={AdminPanel} />

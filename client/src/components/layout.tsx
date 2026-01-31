@@ -4,7 +4,6 @@ import { useProfile } from "@/hooks/use-profiles";
 import { 
   Library, 
   GraduationCap, 
-  Bot, 
   Users, 
   HelpCircle, 
   LogOut, 
@@ -22,14 +21,13 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const [location] = useLocation();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const { data: profile } = useProfile();
   
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: GraduationCap },
     { href: "/library", label: "Rankers Library", icon: Library },
     { href: "/vault", label: "Study Vault", icon: ShieldCheck },
-    { href: "/ai-tutor", label: "AI Tutor", icon: Bot },
     { href: "/community", label: "Community", icon: Users },
     { href: "/profile", label: "My Profile", icon: User },
     { href: "/help", label: "Help Center", icon: HelpCircle },
@@ -66,7 +64,7 @@ export function Layout({ children }: LayoutProps) {
       <div className="p-4 border-t border-border/50 bg-muted/20">
         <div className="flex items-center gap-3 mb-4 px-2">
           <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
-            <AvatarImage src={profile?.user?.profileImageUrl || undefined} />
+            <AvatarImage src={user?.profileImageUrl || undefined} />
             <AvatarFallback>{profile?.username?.[0] || 'U'}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">

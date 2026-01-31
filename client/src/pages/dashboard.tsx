@@ -4,7 +4,6 @@ import { Link } from "wouter";
 import { 
   Library, 
   ShieldCheck, 
-  Bot, 
   Users, 
   ArrowRight,
   Sparkles
@@ -31,7 +30,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           <DashboardCard 
             title="Rankers Library"
             description="Access study materials"
@@ -45,13 +44,6 @@ export default function Dashboard() {
             icon={ShieldCheck}
             href="/vault"
             color="bg-emerald-500/10 text-emerald-600"
-          />
-          <DashboardCard 
-            title="AI Tutor"
-            description="Get instant help"
-            icon={Bot}
-            href="/ai-tutor"
-            color="bg-purple-500/10 text-purple-600"
           />
           <DashboardCard 
             title="Community"
@@ -75,7 +67,7 @@ export default function Dashboard() {
                 </div>
                 <h3 className="font-semibold text-lg">No recent activity</h3>
                 <p className="text-muted-foreground max-w-sm">
-                  Start by exploring the library or asking a question to the AI Tutor.
+                  Start by exploring the library or joining the community.
                 </p>
                 <Link href="/library">
                   <Button variant="outline" className="mt-2">Explore Library</Button>
@@ -89,22 +81,22 @@ export default function Dashboard() {
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Link href="/ai-tutor">
-                <Button className="w-full justify-start text-left h-auto py-3 px-4" variant="outline">
-                  <Bot className="mr-3 w-5 h-5 text-purple-600" />
-                  <div>
-                    <div className="font-semibold">Ask AI Tutor</div>
-                    <div className="text-xs text-muted-foreground">Get help with a topic</div>
-                  </div>
-                  <ArrowRight className="ml-auto w-4 h-4 opacity-50" />
-                </Button>
-              </Link>
               <Link href="/vault">
                 <Button className="w-full justify-start text-left h-auto py-3 px-4" variant="outline">
                   <ShieldCheck className="mr-3 w-5 h-5 text-emerald-600" />
                   <div>
                     <div className="font-semibold">Upload Notes</div>
                     <div className="text-xs text-muted-foreground">Save to your vault</div>
+                  </div>
+                  <ArrowRight className="ml-auto w-4 h-4 opacity-50" />
+                </Button>
+              </Link>
+              <Link href="/community">
+                <Button className="w-full justify-start text-left h-auto py-3 px-4" variant="outline">
+                  <Users className="mr-3 w-5 h-5 text-orange-600" />
+                  <div>
+                    <div className="font-semibold">Join Community</div>
+                    <div className="text-xs text-muted-foreground">Connect with peers</div>
                   </div>
                   <ArrowRight className="ml-auto w-4 h-4 opacity-50" />
                 </Button>

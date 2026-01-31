@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, BookOpen, Shield, Users, BrainCircuit } from "lucide-react";
+import { ArrowRight, BookOpen, Shield, Users } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Landing() {
@@ -39,8 +39,8 @@ export default function Landing() {
               transition={{ delay: 0.1 }}
               className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed"
             >
-              Join the elite community of students. Access premium resources, 
-              secure your personal study materials, and learn with AI.
+              Join the elite community of students. Access premium resources 
+              and secure your personal study materials.
             </motion.p>
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
@@ -56,7 +56,7 @@ export default function Landing() {
             </motion.div>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
             <FeatureCard 
               icon={BookOpen}
               title="Rankers Library"
@@ -70,16 +70,10 @@ export default function Landing() {
               delay={0.4}
             />
             <FeatureCard 
-              icon={BrainCircuit}
-              title="AI Tutor"
-              description="Personalized AI character that helps you learn and answers your doubts 24/7."
-              delay={0.5}
-            />
-            <FeatureCard 
               icon={Users}
               title="Community"
               description="Connect with peers, share knowledge, and grow together."
-              delay={0.6}
+              delay={0.5}
             />
           </div>
         </div>
