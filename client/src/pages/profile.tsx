@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useProfile, useUpdateProfile, useVerifyAdmin } from "@/hooks/use-profiles";
+import { useAuth } from "@/hooks/use-auth";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ import { useForm } from "react-hook-form";
 
 export default function Profile() {
   const { data: profile, isLoading } = useProfile();
+  const { user } = useAuth();
   const updateProfile = useUpdateProfile();
   const verifyAdmin = useVerifyAdmin();
   const { toast } = useToast();
@@ -74,7 +76,7 @@ export default function Profile() {
           <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-center gap-6 pb-2">
               <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
-                <AvatarImage src={profile.user?.profileImageUrl || undefined} />
+                <AvatarImage src={user?.profileImageUrl || undefined} />
                 <AvatarFallback className="text-2xl">{profile.username?.[0] || 'U'}</AvatarFallback>
               </Avatar>
               <div className="flex-1">
