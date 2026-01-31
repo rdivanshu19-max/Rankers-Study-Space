@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ShieldAlert } from "lucide-react";
+import { Loader2, ShieldAlert, Settings } from "lucide-react";
+import { Link } from "wouter";
 import { useForm } from "react-hook-form";
 
 export default function Profile() {
@@ -114,9 +115,17 @@ export default function Profile() {
             </CardHeader>
             <CardContent>
               {profile.role === 'admin' ? (
-                <Button disabled variant="outline" className="w-full sm:w-auto bg-green-50 text-green-700 border-green-200">
-                  You have Admin privileges
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button disabled variant="outline" className="sm:w-auto bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
+                    You have Admin privileges
+                  </Button>
+                  <Link href="/admin">
+                    <Button data-testid="button-open-admin-panel" className="w-full sm:w-auto">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Open Admin Panel
+                    </Button>
+                  </Link>
+                </div>
               ) : (
                 <Dialog open={isAdminDialogOpen} onOpenChange={setIsAdminDialogOpen}>
                   <DialogTrigger asChild>

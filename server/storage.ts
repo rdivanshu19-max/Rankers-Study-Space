@@ -14,7 +14,8 @@ import {
   type InsertCommunityReply,
   type InsertReport,
 } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
+import { users as authUsers } from "@shared/schema";
 
 export interface IStorage {
   // Profiles
@@ -24,7 +25,9 @@ export interface IStorage {
 
   // Library
   getLibraryItems(category?: string): Promise<typeof libraryItems.$inferSelect[]>;
+  getLibraryItem(id: number): Promise<typeof libraryItems.$inferSelect | undefined>;
   createLibraryItem(item: InsertLibraryItem): Promise<typeof libraryItems.$inferSelect>;
+  updateLibraryItem(id: number, updates: Partial<InsertLibraryItem>): Promise<typeof libraryItems.$inferSelect>;
   deleteLibraryItem(id: number): Promise<void>;
 
   // Vault
@@ -33,11 +36,20 @@ export interface IStorage {
   deleteVaultItem(id: number, userId: string): Promise<void>;
 
   // Community
-  getCommunityPosts(): Promise<any[]>; // Complex join return type
+  getCommunityPosts(): Promise<any[]>;
   createCommunityPost(post: InsertCommunityPost): Promise<typeof communityPosts.$inferSelect>;
   createReply(reply: InsertCommunityReply): Promise<typeof communityReplies.$inferSelect>;
   addReaction(postId: number, userId: string, emoji: string): Promise<void>;
   createReport(report: InsertReport): Promise<typeof reports.$inferSelect>;
+  deleteCommunityPost(id: number): Promise<void>;
+  deleteCommunityReply(id: number): Promise<void>;
+
+  // Admin
+  getAllProfiles(): Promise<any[]>;
+  banUser(userId: string): Promise<void>;
+  unbanUser(userId: string): Promise<void>;
+  getReports(): Promise<typeof reports.$inferSelect[]>;
+  updateReportStatus(id: number, status: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -131,6 +143,57 @@ export class DatabaseStorage implements IStorage {
   async createReport(report: InsertReport) {
     const [newItem] = await db.insert(reports).values(report).returning();
     return newItem;
+  }
+
+  async getLibraryItem(id: number) {
+    const [item] = await db.select().from(libraryItems).where(eq(libraryItems.id, id));
+    return item;
+  }
+
+  async updateLibraryItem(id: number, updates: Partial<InsertLibraryItem>) {
+    const [updated] = await db
+      .update(libraryItems)
+      .set(updates)
+      .where(eq(libraryItems.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteCommunityPost(id: number) {
+    await db.delete(communityReplies).where(eq(communityReplies.postId, id));
+    await db.delete(postReactions).where(eq(postReactions.postId, id));
+    await db.delete(communityPosts).where(eq(communityPosts.id, id));
+  }
+
+  async deleteCommunityReply(id: number) {
+    await db.delete(communityReplies).where(eq(communityReplies.id, id));
+  }
+
+  async getAllProfiles() {
+    const allProfiles = await db.select().from(profiles).orderBy(desc(profiles.joinedAt));
+    const profilesWithUsers = await Promise.all(
+      allProfiles.map(async (profile) => {
+        const [user] = await db.select().from(authUsers).where(eq(authUsers.id, profile.userId));
+        return { ...profile, user };
+      })
+    );
+    return profilesWithUsers;
+  }
+
+  async banUser(userId: string) {
+    await db.update(profiles).set({ isBanned: true }).where(eq(profiles.userId, userId));
+  }
+
+  async unbanUser(userId: string) {
+    await db.update(profiles).set({ isBanned: false }).where(eq(profiles.userId, userId));
+  }
+
+  async getReports() {
+    return db.select().from(reports).orderBy(desc(reports.createdAt));
+  }
+
+  async updateReportStatus(id: number, status: string) {
+    await db.update(reports).set({ status }).where(eq(reports.id, id));
   }
 }
 

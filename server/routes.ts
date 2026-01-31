@@ -139,5 +139,92 @@ export async function registerRoutes(
     res.status(201).json(report);
   });
 
+  app.delete(api.community.deletePost.path, isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getProfile(userId);
+    
+    if (profile?.role !== "admin") {
+      return res.status(403).json({ message: "Only admins can delete posts" });
+    }
+
+    await storage.deleteCommunityPost(Number(req.params.id));
+    res.status(204).send();
+  });
+
+  // Admin Routes
+  app.get(api.admin.users.path, isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getProfile(userId);
+    
+    if (profile?.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    const users = await storage.getAllProfiles();
+    res.json(users);
+  });
+
+  app.post(api.admin.banUser.path, isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getProfile(userId);
+    
+    if (profile?.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    await storage.banUser(req.params.userId);
+    res.json({ success: true });
+  });
+
+  app.post(api.admin.unbanUser.path, isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getProfile(userId);
+    
+    if (profile?.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    await storage.unbanUser(req.params.userId);
+    res.json({ success: true });
+  });
+
+  app.get(api.admin.reports.path, isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getProfile(userId);
+    
+    if (profile?.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    const reports = await storage.getReports();
+    res.json(reports);
+  });
+
+  app.post(api.admin.resolveReport.path, isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getProfile(userId);
+    
+    if (profile?.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    const { status } = req.body;
+    await storage.updateReportStatus(Number(req.params.id), status);
+    res.json({ success: true });
+  });
+
+  app.put(api.admin.updateLibraryItem.path, isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getProfile(userId);
+    
+    if (profile?.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    const input = api.admin.updateLibraryItem.input.parse(req.body);
+    const updated = await storage.updateLibraryItem(Number(req.params.id), input);
+    res.json(updated);
+  });
+
   return httpServer;
 }

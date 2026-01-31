@@ -14,9 +14,9 @@ export default function Landing() {
             </div>
             <span className="font-display font-bold text-xl tracking-tight">Name Rankers</span>
           </div>
-          <Link href="/api/login">
-            <Button>Get Started</Button>
-          </Link>
+          <a href="/api/login">
+            <Button data-testid="button-get-started-header">Get Started</Button>
+          </a>
         </div>
       </header>
 
@@ -48,11 +48,11 @@ export default function Landing() {
               transition={{ delay: 0.2 }}
               className="flex flex-col sm:flex-row items-center justify-center gap-4"
             >
-              <Link href="/api/login">
-                <Button size="lg" className="h-14 px-8 rounded-full text-lg shadow-lg hover:shadow-primary/20 shadow-primary/10 transition-all hover:-translate-y-0.5">
+              <a href="/api/login">
+                <Button size="lg" data-testid="button-start-learning" className="h-14 px-8 rounded-full text-lg shadow-lg hover:shadow-primary/20 shadow-primary/10 transition-all hover:-translate-y-0.5">
                   Start Learning Now <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
-              </Link>
+              </a>
             </motion.div>
           </div>
 

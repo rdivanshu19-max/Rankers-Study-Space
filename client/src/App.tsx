@@ -12,6 +12,7 @@ import VaultPage from "@/pages/vault";
 import AITutor from "@/pages/ai-tutor";
 import CommunityPage from "@/pages/community";
 import HelpPage from "@/pages/help";
+import AdminPanel from "@/pages/admin";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 
@@ -49,6 +50,7 @@ function Router() {
       <Route path="/ai-tutor" component={AITutor} />
       <Route path="/community" component={CommunityPage} />
       <Route path="/help" component={HelpPage} />
+      <Route path="/admin" component={AdminPanel} />
       <Route component={NotFound} />
     </Switch>
   );

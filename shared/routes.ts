@@ -148,6 +148,66 @@ export const api = {
         201: z.custom<typeof reports.$inferSelect>(),
       },
     },
+    deletePost: {
+      method: 'DELETE' as const,
+      path: '/api/community/:id',
+      responses: {
+        204: z.void(),
+        403: errorSchemas.forbidden,
+      },
+    },
+  },
+  admin: {
+    users: {
+      method: 'GET' as const,
+      path: '/api/admin/users',
+      responses: {
+        200: z.array(z.any()),
+        403: errorSchemas.forbidden,
+      },
+    },
+    banUser: {
+      method: 'POST' as const,
+      path: '/api/admin/users/:userId/ban',
+      responses: {
+        200: z.object({ success: z.boolean() }),
+        403: errorSchemas.forbidden,
+      },
+    },
+    unbanUser: {
+      method: 'POST' as const,
+      path: '/api/admin/users/:userId/unban',
+      responses: {
+        200: z.object({ success: z.boolean() }),
+        403: errorSchemas.forbidden,
+      },
+    },
+    reports: {
+      method: 'GET' as const,
+      path: '/api/admin/reports',
+      responses: {
+        200: z.array(z.custom<typeof reports.$inferSelect>()),
+        403: errorSchemas.forbidden,
+      },
+    },
+    resolveReport: {
+      method: 'POST' as const,
+      path: '/api/admin/reports/:id/resolve',
+      input: z.object({ status: z.enum(['resolved', 'dismissed']) }),
+      responses: {
+        200: z.object({ success: z.boolean() }),
+        403: errorSchemas.forbidden,
+      },
+    },
+    updateLibraryItem: {
+      method: 'PUT' as const,
+      path: '/api/library/:id',
+      input: insertLibraryItemSchema.partial(),
+      responses: {
+        200: z.custom<typeof libraryItems.$inferSelect>(),
+        403: errorSchemas.forbidden,
+      },
+    },
   },
 };
 

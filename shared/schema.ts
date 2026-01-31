@@ -25,6 +25,7 @@ export const profiles = pgTable("profiles", {
   username: text("username"), // Nickname
   bio: text("bio"),
   role: text("role").default("student").notNull(), // 'student' | 'admin'
+  isBanned: boolean("is_banned").default(false).notNull(),
   joinedAt: timestamp("joined_at").defaultNow(),
 });
 
