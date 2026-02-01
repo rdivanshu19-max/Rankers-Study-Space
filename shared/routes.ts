@@ -6,12 +6,15 @@ import {
   insertCommunityPostSchema, 
   insertCommunityReplySchema, 
   insertReportSchema,
+  insertAnnouncementSchema,
   profiles,
   libraryItems,
   studyVaultItems,
   communityPosts,
   communityReplies,
-  reports
+  reports,
+  announcements,
+  warnings
 } from './schema';
 
 export const errorSchemas = {
@@ -205,6 +208,73 @@ export const api = {
       input: insertLibraryItemSchema.partial(),
       responses: {
         200: z.custom<typeof libraryItems.$inferSelect>(),
+        403: errorSchemas.forbidden,
+      },
+    },
+    muteUser: {
+      method: 'POST' as const,
+      path: '/api/admin/users/:userId/mute',
+      responses: {
+        200: z.object({ success: z.boolean() }),
+        403: errorSchemas.forbidden,
+      },
+    },
+    unmuteUser: {
+      method: 'POST' as const,
+      path: '/api/admin/users/:userId/unmute',
+      responses: {
+        200: z.object({ success: z.boolean() }),
+        403: errorSchemas.forbidden,
+      },
+    },
+    warnUser: {
+      method: 'POST' as const,
+      path: '/api/admin/users/:userId/warn',
+      input: z.object({ reason: z.string() }),
+      responses: {
+        200: z.object({ success: z.boolean(), autoBanned: z.boolean() }),
+        403: errorSchemas.forbidden,
+      },
+    },
+    pinPost: {
+      method: 'POST' as const,
+      path: '/api/admin/posts/:postId/pin',
+      responses: {
+        200: z.object({ success: z.boolean() }),
+        403: errorSchemas.forbidden,
+      },
+    },
+    unpinPost: {
+      method: 'POST' as const,
+      path: '/api/admin/posts/:postId/unpin',
+      responses: {
+        200: z.object({ success: z.boolean() }),
+        403: errorSchemas.forbidden,
+      },
+    },
+  },
+  announcements: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/announcements',
+      responses: {
+        200: z.array(z.custom<typeof announcements.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/announcements',
+      input: insertAnnouncementSchema.omit({ createdBy: true }),
+      responses: {
+        201: z.custom<typeof announcements.$inferSelect>(),
+        403: errorSchemas.forbidden,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/announcements/:id',
+      responses: {
+        204: z.void(),
         403: errorSchemas.forbidden,
       },
     },

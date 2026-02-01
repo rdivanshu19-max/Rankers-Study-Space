@@ -226,5 +226,100 @@ export async function registerRoutes(
     res.json(updated);
   });
 
+  // Mute/Unmute user
+  app.post(api.admin.muteUser.path, isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getProfile(userId);
+    
+    if (profile?.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    await storage.muteUser(req.params.userId);
+    res.json({ success: true });
+  });
+
+  app.post(api.admin.unmuteUser.path, isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getProfile(userId);
+    
+    if (profile?.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    await storage.unmuteUser(req.params.userId);
+    res.json({ success: true });
+  });
+
+  // Warn user
+  app.post(api.admin.warnUser.path, isAuthenticated, async (req: any, res) => {
+    const adminId = req.user.claims.sub;
+    const profile = await storage.getProfile(adminId);
+    
+    if (profile?.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    const { reason } = req.body;
+    const result = await storage.warnUser(req.params.userId, reason || "Violation of community guidelines", adminId);
+    res.json({ success: true, autoBanned: result.autoBanned });
+  });
+
+  // Pin/Unpin posts
+  app.post(api.admin.pinPost.path, isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getProfile(userId);
+    
+    if (profile?.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    await storage.pinPost(Number(req.params.postId));
+    res.json({ success: true });
+  });
+
+  app.post(api.admin.unpinPost.path, isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getProfile(userId);
+    
+    if (profile?.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    await storage.unpinPost(Number(req.params.postId));
+    res.json({ success: true });
+  });
+
+  // Announcements
+  app.get(api.announcements.list.path, isAuthenticated, async (req, res) => {
+    const items = await storage.getAnnouncements();
+    res.json(items);
+  });
+
+  app.post(api.announcements.create.path, isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getProfile(userId);
+    
+    if (profile?.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    const { title, content } = req.body;
+    const announcement = await storage.createAnnouncement({ title, content, createdBy: userId });
+    res.status(201).json(announcement);
+  });
+
+  app.delete(api.announcements.delete.path, isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getProfile(userId);
+    
+    if (profile?.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    await storage.deleteAnnouncement(Number(req.params.id));
+    res.status(204).send();
+  });
+
   return httpServer;
 }

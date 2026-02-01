@@ -7,14 +7,18 @@ import {
   communityReplies,
   postReactions,
   reports,
+  warnings,
+  announcements,
   type InsertProfile,
   type InsertLibraryItem,
   type InsertStudyVaultItem,
   type InsertCommunityPost,
   type InsertCommunityReply,
   type InsertReport,
+  type InsertWarning,
+  type InsertAnnouncement,
 } from "@shared/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 import { users as authUsers } from "@shared/schema";
 
 export interface IStorage {
@@ -48,8 +52,23 @@ export interface IStorage {
   getAllProfiles(): Promise<any[]>;
   banUser(userId: string): Promise<void>;
   unbanUser(userId: string): Promise<void>;
-  getReports(): Promise<typeof reports.$inferSelect[]>;
+  muteUser(userId: string): Promise<void>;
+  unmuteUser(userId: string): Promise<void>;
+  warnUser(userId: string, reason: string, issuedBy: string): Promise<{ autoBanned: boolean }>;
+  getReports(): Promise<any[]>;
   updateReportStatus(id: number, status: string): Promise<void>;
+  
+  // Post pinning
+  pinPost(postId: number): Promise<void>;
+  unpinPost(postId: number): Promise<void>;
+  
+  // Announcements
+  getAnnouncements(): Promise<typeof announcements.$inferSelect[]>;
+  createAnnouncement(announcement: InsertAnnouncement): Promise<typeof announcements.$inferSelect>;
+  deleteAnnouncement(id: number): Promise<void>;
+  
+  // Warnings
+  getUserWarnings(userId: string): Promise<typeof warnings.$inferSelect[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -98,7 +117,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteVaultItem(id: number, userId: string) {
-    await db.delete(studyVaultItems).where(eq(studyVaultItems.id, id), eq(studyVaultItems.userId, userId));
+    await db.delete(studyVaultItems).where(and(eq(studyVaultItems.id, id), eq(studyVaultItems.userId, userId)));
   }
 
   async getCommunityPosts() {
@@ -189,11 +208,73 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getReports() {
-    return db.select().from(reports).orderBy(desc(reports.createdAt));
+    const allReports = await db.select().from(reports).orderBy(desc(reports.createdAt));
+    const reportsWithUsers = await Promise.all(
+      allReports.map(async (report) => {
+        let targetUser = null;
+        if (report.targetUserId) {
+          const [profile] = await db.select().from(profiles).where(eq(profiles.userId, report.targetUserId));
+          targetUser = profile;
+        }
+        return { ...report, targetUser };
+      })
+    );
+    return reportsWithUsers;
   }
 
   async updateReportStatus(id: number, status: string) {
     await db.update(reports).set({ status }).where(eq(reports.id, id));
+  }
+
+  async muteUser(userId: string) {
+    await db.update(profiles).set({ isMuted: true }).where(eq(profiles.userId, userId));
+  }
+
+  async unmuteUser(userId: string) {
+    await db.update(profiles).set({ isMuted: false }).where(eq(profiles.userId, userId));
+  }
+
+  async warnUser(userId: string, reason: string, issuedBy: string) {
+    await db.insert(warnings).values({ userId, reason, issuedBy });
+    
+    const [profile] = await db.select().from(profiles).where(eq(profiles.userId, userId));
+    const newWarningCount = (profile?.warningCount || 0) + 1;
+    
+    await db.update(profiles)
+      .set({ warningCount: newWarningCount })
+      .where(eq(profiles.userId, userId));
+    
+    if (newWarningCount >= 3) {
+      await this.banUser(userId);
+      return { autoBanned: true };
+    }
+    
+    return { autoBanned: false };
+  }
+
+  async pinPost(postId: number) {
+    await db.update(communityPosts).set({ isPinned: true }).where(eq(communityPosts.id, postId));
+  }
+
+  async unpinPost(postId: number) {
+    await db.update(communityPosts).set({ isPinned: false }).where(eq(communityPosts.id, postId));
+  }
+
+  async getAnnouncements() {
+    return db.select().from(announcements).orderBy(desc(announcements.createdAt));
+  }
+
+  async createAnnouncement(announcement: InsertAnnouncement) {
+    const [newAnnouncement] = await db.insert(announcements).values(announcement).returning();
+    return newAnnouncement;
+  }
+
+  async deleteAnnouncement(id: number) {
+    await db.delete(announcements).where(eq(announcements.id, id));
+  }
+
+  async getUserWarnings(userId: string) {
+    return db.select().from(warnings).where(eq(warnings.userId, userId)).orderBy(desc(warnings.createdAt));
   }
 }
 

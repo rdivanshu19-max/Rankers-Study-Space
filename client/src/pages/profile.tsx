@@ -9,9 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ShieldAlert, Settings } from "lucide-react";
+import { Loader2, ShieldAlert, Settings, Camera } from "lucide-react";
 import { Link } from "wouter";
 import { useForm } from "react-hook-form";
+import { ObjectUploader } from "@/components/ObjectUploader";
 
 export default function Profile() {
   const { data: profile, isLoading } = useProfile();
@@ -21,9 +22,10 @@ export default function Profile() {
   const { toast } = useToast();
   
   const [isAdminDialogOpen, setIsAdminDialogOpen] = useState(false);
+  const [isPhotoDialogOpen, setIsPhotoDialogOpen] = useState(false);
   const [passcode, setPasscode] = useState("");
 
-  const { register, handleSubmit } = useForm({
+  const { register, handleSubmit, reset } = useForm({
     defaultValues: {
       username: profile?.username || "",
       bio: profile?.bio || "",
@@ -64,6 +66,23 @@ export default function Profile() {
     });
   };
 
+  const handlePhotoUpload = (result: any) => {
+    if (result.successful && result.successful.length > 0) {
+      const photoUrl = result.successful[0].uploadURL;
+      updateProfile.mutate({ profilePhotoUrl: photoUrl }, {
+        onSuccess: () => {
+          setIsPhotoDialogOpen(false);
+          toast({ title: "Photo updated", description: "Your profile photo has been changed." });
+        },
+        onError: () => {
+          toast({ title: "Error", description: "Failed to update photo.", variant: "destructive" });
+        }
+      });
+    }
+  };
+
+  const profileImageUrl = profile.profilePhotoUrl || user?.profileImageUrl;
+
   return (
     <Layout>
       <div className="max-w-3xl mx-auto space-y-8">
@@ -75,28 +94,82 @@ export default function Profile() {
         <div className="grid gap-8">
           <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-center gap-6 pb-2">
-              <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
-                <AvatarImage src={user?.profileImageUrl || undefined} />
-                <AvatarFallback className="text-2xl">{profile.username?.[0] || 'U'}</AvatarFallback>
-              </Avatar>
+              <div className="relative group">
+                <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
+                  <AvatarImage src={profileImageUrl || undefined} />
+                  <AvatarFallback className="text-2xl">{profile.username?.[0] || 'U'}</AvatarFallback>
+                </Avatar>
+                <Dialog open={isPhotoDialogOpen} onOpenChange={setIsPhotoDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      size="icon" 
+                      className="absolute bottom-0 right-0 h-8 w-8 rounded-full shadow-lg"
+                      data-testid="button-change-photo"
+                    >
+                      <Camera className="w-4 h-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Change Profile Photo</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                      <ObjectUploader
+                        onGetUploadParameters={async (file) => {
+                          const res = await fetch("/api/uploads/request-url", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              name: file.name,
+                              size: file.size,
+                              contentType: file.type,
+                            }),
+                          });
+                          const { uploadURL } = await res.json();
+                          return {
+                            method: "PUT",
+                            url: uploadURL,
+                            headers: { "Content-Type": file.type },
+                          };
+                        }}
+                        onComplete={handlePhotoUpload}
+                        buttonClassName="w-full"
+                      >
+                        Select Photo from Device
+                      </ObjectUploader>
+                      <p className="text-xs text-muted-foreground mt-3 text-center">
+                        Choose an image from your device to use as your profile photo
+                      </p>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
               <div className="flex-1">
                 <CardTitle className="text-2xl">{profile.username || 'Student'}</CardTitle>
                 <CardDescription className="text-base capitalize flex items-center gap-2 mt-1">
                   {profile.role}
                   {profile.role === 'admin' && <ShieldAlert className="w-4 h-4 text-primary" />}
                 </CardDescription>
+                {profile.isMuted && (
+                  <p className="text-sm text-orange-600 mt-1">You are currently muted</p>
+                )}
+                {profile.warningCount > 0 && (
+                  <p className="text-sm text-yellow-600 mt-1">
+                    Warnings: {profile.warningCount}/3
+                  </p>
+                )}
               </div>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit(onSave)} className="space-y-6">
                 <div className="grid gap-2">
                   <label className="text-sm font-medium">Nickname</label>
-                  <Input {...register("username")} placeholder="Enter your nickname" />
+                  <Input {...register("username")} placeholder="Enter your nickname" defaultValue={profile.username || ""} />
                 </div>
                 
                 <div className="grid gap-2">
                   <label className="text-sm font-medium">Bio</label>
-                  <Textarea {...register("bio")} placeholder="Tell us about yourself..." className="h-24 resize-none" />
+                  <Textarea {...register("bio")} placeholder="Tell us about yourself..." className="h-24 resize-none" defaultValue={profile.bio || ""} />
                 </div>
 
                 <div className="flex justify-end gap-4">

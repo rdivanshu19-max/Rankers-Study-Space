@@ -46,7 +46,7 @@ export default function HelpPage() {
                   <h3 className="font-bold">Usage Guide</h3>
                   <p className="text-sm text-muted-foreground mt-1">Learn how to use the Library and Study Vault efficiently.</p>
                 </div>
-                <Button variant="link" className="text-blue-600">Read Guide</Button>
+                <Button variant="ghost" className="text-blue-600">Read Guide</Button>
               </CardContent>
             </Card>
 
@@ -59,7 +59,7 @@ export default function HelpPage() {
                   <h3 className="font-bold">Community Rules</h3>
                   <p className="text-sm text-muted-foreground mt-1">Guidelines for maintaining a healthy learning environment.</p>
                 </div>
-                <Button variant="link" className="text-purple-600">View Guidelines</Button>
+                <Button variant="ghost" className="text-purple-600">View Guidelines</Button>
               </CardContent>
             </Card>
           </div>

@@ -5,6 +5,7 @@ import { useProfile } from "@/hooks/use-profiles";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Select, 
   SelectContent, 
@@ -17,7 +18,8 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogTrigger 
+  DialogTrigger,
+  DialogFooter
 } from "@/components/ui/dialog";
 import { 
   FileText, 
@@ -27,7 +29,10 @@ import {
   Plus, 
   Trash2, 
   Download,
-  Loader2
+  Loader2,
+  Link as LinkIcon,
+  ExternalLink,
+  Upload
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -58,6 +63,10 @@ export default function LibraryPage() {
         onError: () => toast({ title: "Error", description: "Failed to delete item", variant: "destructive" })
       });
     }
+  };
+
+  const getDownloadUrl = (item: any) => {
+    return item.linkUrl || item.fileUrl;
   };
 
   return (
@@ -112,11 +121,14 @@ export default function LibraryPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredItems?.map((item) => {
               const Icon = getIcon(item.category);
+              const downloadUrl = getDownloadUrl(item);
+              const isLink = !!item.linkUrl;
+              
               return (
                 <div key={item.id} className="group bg-card rounded-xl p-6 border border-border/50 shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 flex flex-col">
                   <div className="flex items-start justify-between mb-4">
                     <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                      <Icon className="w-5 h-5" />
+                      {isLink ? <LinkIcon className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
                     </div>
                     {profile?.role === 'admin' && (
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleDelete(item.id)}>
@@ -126,16 +138,29 @@ export default function LibraryPage() {
                   </div>
                   
                   <h3 className="font-bold text-lg mb-1 line-clamp-1">{item.title}</h3>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-medium">{item.category}</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-medium flex items-center gap-2">
+                    {item.category}
+                    {isLink && <span className="text-primary">(Link)</span>}
+                  </p>
                   <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1">
                     {item.description || "No description provided."}
                   </p>
                   
-                  <a href={item.fileUrl} target="_blank" rel="noopener noreferrer" className="block mt-auto">
-                    <Button variant="outline" className="w-full gap-2 group-hover:border-primary/50 group-hover:bg-primary/5">
-                      <Download className="w-4 h-4" /> Download
-                    </Button>
-                  </a>
+                  {downloadUrl && (
+                    <a href={downloadUrl} target="_blank" rel="noopener noreferrer" className="block mt-auto">
+                      <Button variant="outline" className="w-full gap-2 group-hover:border-primary/50 group-hover:bg-primary/5">
+                        {isLink ? (
+                          <>
+                            <ExternalLink className="w-4 h-4" /> Open Link
+                          </>
+                        ) : (
+                          <>
+                            <Download className="w-4 h-4" /> Download
+                          </>
+                        )}
+                      </Button>
+                    </a>
+                  )}
                 </div>
               );
             })}
@@ -153,42 +178,54 @@ function UploadDialog() {
   const [category, setCategory] = useState("Lecture PDF");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [uploadMode, setUploadMode] = useState<"file" | "link">("file");
+  const [fileUrl, setFileUrl] = useState("");
 
   const handleUploadComplete = async (result: any) => {
     if (result.successful && result.successful.length > 0) {
       const file = result.successful[0];
-      // Note: In a real app we'd construct the URL properly based on object storage response
-      // For this demo we'll use the uploadURL directly assuming it's public or we'd get a signed URL
-      // But Uppy result usually gives uploadURL. Let's assume we get a valid public URL.
-      const fileUrl = file.uploadURL; 
-
-      createItem.mutate({
-        title,
-        description,
-        category,
-        fileUrl,
-      }, {
-        onSuccess: () => {
-          setOpen(false);
-          toast({ title: "Success", description: "Item added to library" });
-          setTitle("");
-          setDescription("");
-        },
-        onError: () => toast({ title: "Error", description: "Failed to add item", variant: "destructive" })
-      });
+      setFileUrl(file.uploadURL);
+      toast({ title: "File uploaded", description: "Now save the item to library." });
     }
+  };
+
+  const handleSave = () => {
+    const url = uploadMode === "link" ? linkUrl : fileUrl;
+    if (!url) {
+      toast({ title: "Error", description: "Please provide a file or link", variant: "destructive" });
+      return;
+    }
+
+    createItem.mutate({
+      title,
+      description,
+      category,
+      fileUrl: uploadMode === "file" ? fileUrl : undefined,
+      linkUrl: uploadMode === "link" ? linkUrl : undefined,
+    }, {
+      onSuccess: () => {
+        setOpen(false);
+        toast({ title: "Success", description: "Item added to library" });
+        setTitle("");
+        setDescription("");
+        setLinkUrl("");
+        setFileUrl("");
+      },
+      onError: () => toast({ title: "Error", description: "Failed to add item", variant: "destructive" })
+    });
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button className="gap-2 shadow-lg shadow-primary/20">
-          <Plus className="w-4 h-4" /> Upload Material
+          <Plus className="w-4 h-4" /> Add Material
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Upload to Library</DialogTitle>
+          <DialogTitle>Add to Library</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
@@ -211,32 +248,71 @@ function UploadDialog() {
             <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional description" />
           </div>
           
-          <div className="pt-2">
-            <ObjectUploader
-              onGetUploadParameters={async (file) => {
-                const res = await fetch("/api/uploads/request-url", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    name: file.name,
-                    size: file.size,
-                    contentType: file.type,
-                  }),
-                });
-                const { uploadURL } = await res.json();
-                return {
-                  method: "PUT",
-                  url: uploadURL,
-                  headers: { "Content-Type": file.type },
-                };
-              }}
-              onComplete={handleUploadComplete}
-              buttonClassName="w-full"
-            >
-              Select File & Upload
-            </ObjectUploader>
-          </div>
+          <Tabs value={uploadMode} onValueChange={(v) => setUploadMode(v as "file" | "link")}>
+            <TabsList className="w-full">
+              <TabsTrigger value="file" className="flex-1">
+                <Upload className="w-4 h-4 mr-2" /> Upload File
+              </TabsTrigger>
+              <TabsTrigger value="link" className="flex-1">
+                <LinkIcon className="w-4 h-4 mr-2" /> Add Link
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          
+          {uploadMode === "file" ? (
+            <div className="pt-2">
+              {fileUrl ? (
+                <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                  <p className="text-sm text-green-700 dark:text-green-400">File uploaded successfully!</p>
+                </div>
+              ) : (
+                <ObjectUploader
+                  onGetUploadParameters={async (file) => {
+                    const res = await fetch("/api/uploads/request-url", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        name: file.name,
+                        size: file.size,
+                        contentType: file.type,
+                      }),
+                    });
+                    const { uploadURL } = await res.json();
+                    return {
+                      method: "PUT",
+                      url: uploadURL,
+                      headers: { "Content-Type": file.type },
+                    };
+                  }}
+                  onComplete={handleUploadComplete}
+                  buttonClassName="w-full"
+                >
+                  Select File & Upload
+                </ObjectUploader>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Document Link</label>
+              <Input 
+                value={linkUrl} 
+                onChange={(e) => setLinkUrl(e.target.value)} 
+                placeholder="https://drive.google.com/..." 
+              />
+              <p className="text-xs text-muted-foreground">
+                Paste a link to Google Drive, Dropbox, or any public document
+              </p>
+            </div>
+          )}
         </div>
+        <DialogFooter>
+          <Button 
+            onClick={handleSave} 
+            disabled={!title || (uploadMode === "file" ? !fileUrl : !linkUrl)}
+          >
+            Save to Library
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
