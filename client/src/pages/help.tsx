@@ -26,10 +26,10 @@ export default function HelpPage() {
             <CardContent>
               <div className="bg-muted/30 p-4 rounded-lg border border-border/50 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium">Admin Email</p>
-                  <p className="text-lg font-bold text-primary">admin@namerankers.edu</p>
+                  <p className="text-sm font-medium">Support Email</p>
+                  <p className="text-lg font-bold text-primary">studyspacerankers@gmail.com</p>
                 </div>
-                <Button variant="outline" onClick={() => window.location.href = 'mailto:admin@namerankers.edu'}>
+                <Button variant="outline" onClick={() => window.location.href = 'mailto:studyspacerankers@gmail.com'}>
                   Send Email
                 </Button>
               </div>

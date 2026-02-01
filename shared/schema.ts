@@ -24,8 +24,11 @@ export const profiles = pgTable("profiles", {
   userId: text("user_id").notNull().unique(), // Links to auth.users.id
   username: text("username"), // Nickname
   bio: text("bio"),
+  profilePhotoUrl: text("profile_photo_url"), // Custom profile photo
   role: text("role").default("student").notNull(), // 'student' | 'admin'
   isBanned: boolean("is_banned").default(false).notNull(),
+  isMuted: boolean("is_muted").default(false).notNull(),
+  warningCount: integer("warning_count").default(0).notNull(),
   joinedAt: timestamp("joined_at").defaultNow(),
 });
 
@@ -34,7 +37,8 @@ export const libraryItems = pgTable("library_items", {
   title: text("title").notNull(),
   description: text("description"),
   category: text("category").notNull(), // 'Book', 'Lecture PDF', 'Question Paper'
-  fileUrl: text("file_url").notNull(),
+  fileUrl: text("file_url"), // Can be null if using link
+  linkUrl: text("link_url"), // External document link
   uploadedBy: text("uploaded_by").notNull(), // userId
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -43,7 +47,8 @@ export const studyVaultItems = pgTable("study_vault_items", {
   id: serial("id").primaryKey(),
   userId: text("user_id").notNull(),
   title: text("title").notNull(),
-  fileUrl: text("file_url").notNull(),
+  fileUrl: text("file_url"), // Can be null if using link
+  linkUrl: text("link_url"), // External document link
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -51,8 +56,10 @@ export const communityPosts = pgTable("community_posts", {
   id: serial("id").primaryKey(),
   userId: text("user_id").notNull(),
   content: text("content").notNull(),
-  type: text("type").default("text"), // 'text', 'photo', 'video'
+  type: text("type").default("text"), // 'text', 'photo', 'video', 'link'
   mediaUrl: text("media_url"),
+  linkUrl: text("link_url"), // External link
+  isPinned: boolean("is_pinned").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -75,9 +82,26 @@ export const reports = pgTable("reports", {
   id: serial("id").primaryKey(),
   targetId: integer("target_id").notNull(), // postId or replyId
   targetType: text("target_type").notNull(), // 'post' or 'reply'
+  targetUserId: text("target_user_id"), // userId of the reported user
   reason: text("reason").notNull(),
   reportedBy: text("reported_by").notNull(),
   status: text("status").default("pending"), // 'pending', 'resolved', 'dismissed'
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const warnings = pgTable("warnings", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  reason: text("reason").notNull(),
+  issuedBy: text("issued_by").notNull(), // admin userId
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const announcements = pgTable("announcements", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  createdBy: text("created_by").notNull(), // admin userId
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -120,9 +144,11 @@ export const communityRepliesRelations = relations(communityReplies, ({ one }) =
 export const insertProfileSchema = createInsertSchema(profiles).omit({ id: true, joinedAt: true });
 export const insertLibraryItemSchema = createInsertSchema(libraryItems).omit({ id: true, createdAt: true });
 export const insertStudyVaultItemSchema = createInsertSchema(studyVaultItems).omit({ id: true, createdAt: true });
-export const insertCommunityPostSchema = createInsertSchema(communityPosts).omit({ id: true, createdAt: true });
+export const insertCommunityPostSchema = createInsertSchema(communityPosts).omit({ id: true, createdAt: true, isPinned: true });
 export const insertCommunityReplySchema = createInsertSchema(communityReplies).omit({ id: true, createdAt: true });
 export const insertReportSchema = createInsertSchema(reports).omit({ id: true, createdAt: true, status: true });
+export const insertWarningSchema = createInsertSchema(warnings).omit({ id: true, createdAt: true });
+export const insertAnnouncementSchema = createInsertSchema(announcements).omit({ id: true, createdAt: true });
 
 // Types
 export type Profile = typeof profiles.$inferSelect;
@@ -137,6 +163,10 @@ export type CommunityReply = typeof communityReplies.$inferSelect;
 export type InsertCommunityReply = z.infer<typeof insertCommunityReplySchema>;
 export type Report = typeof reports.$inferSelect;
 export type InsertReport = z.infer<typeof insertReportSchema>;
+export type Warning = typeof warnings.$inferSelect;
+export type InsertWarning = z.infer<typeof insertWarningSchema>;
+export type Announcement = typeof announcements.$inferSelect;
+export type InsertAnnouncement = z.infer<typeof insertAnnouncementSchema>;
 
 // Extended types for frontend
 export type CommunityPostWithAuthor = CommunityPost & {
