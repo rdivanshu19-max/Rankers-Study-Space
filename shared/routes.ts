@@ -7,6 +7,8 @@ import {
   insertCommunityReplySchema, 
   insertReportSchema,
   insertAnnouncementSchema,
+  insertLibraryRatingSchema,
+  insertLibraryCommentSchema,
   profiles,
   libraryItems,
   studyVaultItems,
@@ -14,7 +16,9 @@ import {
   communityReplies,
   reports,
   announcements,
-  warnings
+  warnings,
+  libraryRatings,
+  libraryComments
 } from './schema';
 
 export const errorSchemas = {
@@ -66,7 +70,7 @@ export const api = {
         category: z.string().optional(),
       }).optional(),
       responses: {
-        200: z.array(z.custom<typeof libraryItems.$inferSelect>()),
+        200: z.array(z.any()),
       },
     },
     create: {
@@ -83,6 +87,62 @@ export const api = {
       path: '/api/library/:id',
       responses: {
         204: z.void(),
+        403: errorSchemas.forbidden,
+      },
+    },
+    unlock: {
+      method: 'POST' as const,
+      path: '/api/library/:id/unlock',
+      input: z.object({ password: z.string() }),
+      responses: {
+        200: z.object({ success: z.boolean() }),
+        403: errorSchemas.forbidden,
+      },
+    },
+    rate: {
+      method: 'POST' as const,
+      path: '/api/library/:id/rate',
+      input: z.object({ rating: z.number().min(1).max(5) }),
+      responses: {
+        200: z.object({ success: z.boolean() }),
+      },
+    },
+    comments: {
+      method: 'GET' as const,
+      path: '/api/library/:id/comments',
+      responses: {
+        200: z.array(z.any()),
+      },
+    },
+    addComment: {
+      method: 'POST' as const,
+      path: '/api/library/:id/comments',
+      input: z.object({ content: z.string() }),
+      responses: {
+        201: z.custom<typeof libraryComments.$inferSelect>(),
+      },
+    },
+    deleteComment: {
+      method: 'DELETE' as const,
+      path: '/api/library/:id/comments/:commentId',
+      responses: {
+        204: z.void(),
+        403: errorSchemas.forbidden,
+      },
+    },
+    pinComment: {
+      method: 'POST' as const,
+      path: '/api/library/:id/comments/:commentId/pin',
+      responses: {
+        200: z.object({ success: z.boolean() }),
+        403: errorSchemas.forbidden,
+      },
+    },
+    unpinComment: {
+      method: 'POST' as const,
+      path: '/api/library/:id/comments/:commentId/unpin',
+      responses: {
+        200: z.object({ success: z.boolean() }),
         403: errorSchemas.forbidden,
       },
     },

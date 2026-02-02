@@ -40,6 +40,25 @@ export const libraryItems = pgTable("library_items", {
   fileUrl: text("file_url"), // Can be null if using link
   linkUrl: text("link_url"), // External document link
   uploadedBy: text("uploaded_by").notNull(), // userId
+  isLocked: boolean("is_locked").default(false).notNull(),
+  lockPassword: text("lock_password"), // Password set by admin to lock the material
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const libraryRatings = pgTable("library_ratings", {
+  id: serial("id").primaryKey(),
+  libraryItemId: integer("library_item_id").notNull(),
+  userId: text("user_id").notNull(),
+  rating: integer("rating").notNull(), // 1-5 stars
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const libraryComments = pgTable("library_comments", {
+  id: serial("id").primaryKey(),
+  libraryItemId: integer("library_item_id").notNull(),
+  userId: text("user_id").notNull(),
+  content: text("content").notNull(),
+  isPinned: boolean("is_pinned").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -149,6 +168,8 @@ export const insertCommunityReplySchema = createInsertSchema(communityReplies).o
 export const insertReportSchema = createInsertSchema(reports).omit({ id: true, createdAt: true, status: true });
 export const insertWarningSchema = createInsertSchema(warnings).omit({ id: true, createdAt: true });
 export const insertAnnouncementSchema = createInsertSchema(announcements).omit({ id: true, createdAt: true });
+export const insertLibraryRatingSchema = createInsertSchema(libraryRatings).omit({ id: true, createdAt: true });
+export const insertLibraryCommentSchema = createInsertSchema(libraryComments).omit({ id: true, createdAt: true, isPinned: true });
 
 // Types
 export type Profile = typeof profiles.$inferSelect;
@@ -167,6 +188,10 @@ export type Warning = typeof warnings.$inferSelect;
 export type InsertWarning = z.infer<typeof insertWarningSchema>;
 export type Announcement = typeof announcements.$inferSelect;
 export type InsertAnnouncement = z.infer<typeof insertAnnouncementSchema>;
+export type LibraryRating = typeof libraryRatings.$inferSelect;
+export type InsertLibraryRating = z.infer<typeof insertLibraryRatingSchema>;
+export type LibraryComment = typeof libraryComments.$inferSelect;
+export type InsertLibraryComment = z.infer<typeof insertLibraryCommentSchema>;
 
 // Extended types for frontend
 export type CommunityPostWithAuthor = CommunityPost & {

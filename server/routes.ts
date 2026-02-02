@@ -83,6 +83,93 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
+  // Unlock locked library item
+  app.post("/api/library/:id/unlock", isAuthenticated, async (req: any, res) => {
+    const itemId = Number(req.params.id);
+    const { password } = req.body;
+    const item = await storage.getLibraryItem(itemId);
+    
+    if (!item) {
+      return res.status(404).json({ message: "Item not found" });
+    }
+    
+    if (!item.isLocked) {
+      return res.json({ success: true });
+    }
+    
+    if (item.lockPassword === password) {
+      res.json({ success: true });
+    } else {
+      res.status(403).json({ message: "Incorrect password" });
+    }
+  });
+
+  // Rate library item
+  app.post("/api/library/:id/rate", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const itemId = Number(req.params.id);
+    const { rating } = req.body;
+    
+    await storage.addLibraryRating({ libraryItemId: itemId, userId, rating });
+    res.json({ success: true });
+  });
+
+  // Get library item comments
+  app.get("/api/library/:id/comments", isAuthenticated, async (req, res) => {
+    const itemId = Number(req.params.id);
+    const comments = await storage.getLibraryComments(itemId);
+    res.json(comments);
+  });
+
+  // Add comment to library item
+  app.post("/api/library/:id/comments", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const itemId = Number(req.params.id);
+    const { content } = req.body;
+    
+    const comment = await storage.addLibraryComment({ libraryItemId: itemId, userId, content });
+    res.status(201).json(comment);
+  });
+
+  // Delete library comment (admin only)
+  app.delete("/api/library/:id/comments/:commentId", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getProfile(userId);
+    
+    if (profile?.role !== "admin") {
+      return res.status(403).json({ message: "Only admins can delete comments" });
+    }
+
+    await storage.deleteLibraryComment(Number(req.params.commentId));
+    res.status(204).send();
+  });
+
+  // Pin library comment (admin only)
+  app.post("/api/library/:id/comments/:commentId/pin", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getProfile(userId);
+    
+    if (profile?.role !== "admin") {
+      return res.status(403).json({ message: "Only admins can pin comments" });
+    }
+
+    await storage.pinLibraryComment(Number(req.params.commentId));
+    res.json({ success: true });
+  });
+
+  // Unpin library comment (admin only)
+  app.post("/api/library/:id/comments/:commentId/unpin", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const profile = await storage.getProfile(userId);
+    
+    if (profile?.role !== "admin") {
+      return res.status(403).json({ message: "Only admins can unpin comments" });
+    }
+
+    await storage.unpinLibraryComment(Number(req.params.commentId));
+    res.json({ success: true });
+  });
+
   // Vault Routes
   app.get(api.studyVault.list.path, isAuthenticated, async (req: any, res) => {
     const userId = req.user.claims.sub;

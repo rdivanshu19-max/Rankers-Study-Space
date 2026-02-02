@@ -2,6 +2,8 @@ import { db } from "./db";
 import {
   profiles,
   libraryItems,
+  libraryRatings,
+  libraryComments,
   studyVaultItems,
   communityPosts,
   communityReplies,
@@ -17,8 +19,10 @@ import {
   type InsertReport,
   type InsertWarning,
   type InsertAnnouncement,
+  type InsertLibraryRating,
+  type InsertLibraryComment,
 } from "@shared/schema";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, sql, avg } from "drizzle-orm";
 import { users as authUsers } from "@shared/schema";
 
 export interface IStorage {
@@ -28,11 +32,21 @@ export interface IStorage {
   updateProfile(userId: string, updates: Partial<InsertProfile>): Promise<typeof profiles.$inferSelect>;
 
   // Library
-  getLibraryItems(category?: string): Promise<typeof libraryItems.$inferSelect[]>;
+  getLibraryItems(category?: string): Promise<any[]>;
   getLibraryItem(id: number): Promise<typeof libraryItems.$inferSelect | undefined>;
   createLibraryItem(item: InsertLibraryItem): Promise<typeof libraryItems.$inferSelect>;
   updateLibraryItem(id: number, updates: Partial<InsertLibraryItem>): Promise<typeof libraryItems.$inferSelect>;
   deleteLibraryItem(id: number): Promise<void>;
+  
+  // Library Ratings & Comments
+  addLibraryRating(rating: InsertLibraryRating): Promise<typeof libraryRatings.$inferSelect>;
+  getLibraryItemRating(itemId: number): Promise<{ average: number; count: number }>;
+  getUserRating(itemId: number, userId: string): Promise<typeof libraryRatings.$inferSelect | undefined>;
+  getLibraryComments(itemId: number): Promise<any[]>;
+  addLibraryComment(comment: InsertLibraryComment): Promise<typeof libraryComments.$inferSelect>;
+  deleteLibraryComment(id: number): Promise<void>;
+  pinLibraryComment(id: number): Promise<void>;
+  unpinLibraryComment(id: number): Promise<void>;
 
   // Vault
   getVaultItems(userId: string): Promise<typeof studyVaultItems.$inferSelect[]>;
@@ -92,10 +106,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getLibraryItems(category?: string) {
+    let items;
     if (category) {
-      return db.select().from(libraryItems).where(eq(libraryItems.category, category)).orderBy(desc(libraryItems.createdAt));
+      items = await db.select().from(libraryItems).where(eq(libraryItems.category, category)).orderBy(desc(libraryItems.createdAt));
+    } else {
+      items = await db.select().from(libraryItems).orderBy(desc(libraryItems.createdAt));
     }
-    return db.select().from(libraryItems).orderBy(desc(libraryItems.createdAt));
+    
+    // Add ratings to each item
+    const itemsWithRatings = await Promise.all(items.map(async (item) => {
+      const ratingData = await this.getLibraryItemRating(item.id);
+      return { ...item, averageRating: ratingData.average, ratingCount: ratingData.count };
+    }));
+    
+    return itemsWithRatings;
   }
 
   async createLibraryItem(item: InsertLibraryItem) {
@@ -104,7 +128,67 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteLibraryItem(id: number) {
+    await db.delete(libraryRatings).where(eq(libraryRatings.libraryItemId, id));
+    await db.delete(libraryComments).where(eq(libraryComments.libraryItemId, id));
     await db.delete(libraryItems).where(eq(libraryItems.id, id));
+  }
+
+  async addLibraryRating(rating: InsertLibraryRating) {
+    // Check if user already rated, update if so
+    const existing = await this.getUserRating(rating.libraryItemId, rating.userId);
+    if (existing) {
+      const [updated] = await db.update(libraryRatings)
+        .set({ rating: rating.rating })
+        .where(eq(libraryRatings.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [newRating] = await db.insert(libraryRatings).values(rating).returning();
+    return newRating;
+  }
+
+  async getLibraryItemRating(itemId: number) {
+    const ratings = await db.select().from(libraryRatings).where(eq(libraryRatings.libraryItemId, itemId));
+    if (ratings.length === 0) return { average: 0, count: 0 };
+    const sum = ratings.reduce((acc, r) => acc + r.rating, 0);
+    return { average: sum / ratings.length, count: ratings.length };
+  }
+
+  async getUserRating(itemId: number, userId: string) {
+    const [rating] = await db.select().from(libraryRatings)
+      .where(and(eq(libraryRatings.libraryItemId, itemId), eq(libraryRatings.userId, userId)));
+    return rating;
+  }
+
+  async getLibraryComments(itemId: number) {
+    const comments = await db.select().from(libraryComments)
+      .where(eq(libraryComments.libraryItemId, itemId))
+      .orderBy(desc(libraryComments.isPinned), desc(libraryComments.createdAt));
+    
+    // Get author info for each comment
+    const commentsWithAuthors = await Promise.all(comments.map(async (comment) => {
+      const [author] = await db.select().from(profiles).where(eq(profiles.userId, comment.userId));
+      return { ...comment, author };
+    }));
+    
+    return commentsWithAuthors;
+  }
+
+  async addLibraryComment(comment: InsertLibraryComment) {
+    const [newComment] = await db.insert(libraryComments).values(comment).returning();
+    return newComment;
+  }
+
+  async deleteLibraryComment(id: number) {
+    await db.delete(libraryComments).where(eq(libraryComments.id, id));
+  }
+
+  async pinLibraryComment(id: number) {
+    await db.update(libraryComments).set({ isPinned: true }).where(eq(libraryComments.id, id));
+  }
+
+  async unpinLibraryComment(id: number) {
+    await db.update(libraryComments).set({ isPinned: false }).where(eq(libraryComments.id, id));
   }
 
   async getVaultItems(userId: string) {

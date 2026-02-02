@@ -10,9 +10,9 @@ export default function Landing() {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <span className="text-white font-bold text-xl">N</span>
+              <span className="text-white font-bold text-xl">R</span>
             </div>
-            <span className="font-display font-bold text-xl tracking-tight">Name Rankers</span>
+            <span className="font-display font-bold text-xl tracking-tight">Rankers Study Space</span>
           </div>
           <a href="/api/login">
             <Button data-testid="button-get-started-header">Get Started</Button>
@@ -81,7 +81,7 @@ export default function Landing() {
 
       <footer className="border-t border-border/40 py-8 bg-muted/20">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>© 2024 Name Rankers Study Space. All rights reserved.</p>
+          <p>© 2024 Rankers Study Space. All rights reserved.</p>
         </div>
       </footer>
     </div>

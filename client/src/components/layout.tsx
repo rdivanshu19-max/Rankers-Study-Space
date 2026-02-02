@@ -37,7 +37,7 @@ export function Layout({ children }: LayoutProps) {
     <div className="flex flex-col h-full bg-card border-r border-border/50">
       <div className="p-6">
         <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-          Name Rankers
+          Rankers
         </h1>
         <p className="text-sm text-muted-foreground">Study Space</p>
       </div>
@@ -94,7 +94,7 @@ export function Layout({ children }: LayoutProps) {
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-background/80 backdrop-blur-md border-b border-border z-40 flex items-center px-4 justify-between">
         <span className="font-bold text-lg bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-          Name Rankers
+          Rankers Study Space
         </span>
         <Sheet>
           <SheetTrigger asChild>
